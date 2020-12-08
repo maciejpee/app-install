@@ -1,0 +1,34 @@
+---
+- hosts: app_nodes
+  become: yes
+  vars:
+    JRE_RPM_URL: https://corretto.aws/downloads/latest/amazon-corretto-11-x64-al2-jre.rpm
+    APP_JAR_URL: https://uek-krakow.s3-eu-west-1.amazonaws.com/pp5/application.jar
+    APP_DIR: /opt/ecommerce
+    APP_USER: exommerce
+  tasks:
+    - name: "install java jre"
+      yum:
+        name: "{{ JRE_RPM_URL }}"
+        state: present
+    - name: "ensure dest dir exists"
+      file:
+        path: "{{ APP_DIR }}"
+        state: directory
+    - name: "download app"
+      get_url:
+        url: "{{ APP_JAR_URL }}"
+        dest: "{{ APP_DIR ~ '/application.jar' }}"
+    - name: "create user"
+      user:
+        name: "{{ APP_USER }}"
+    - name: "place service cfg"
+      template:
+        src: files/ecommerce.service
+        dest: /etc/systemd/system/ecommerce.service
+    - name:
+      systemd:
+        name: ecommerce
+        daemon_reload: yes
+        enabled: yes
+        state: restarted
